@@ -1,5 +1,7 @@
 package com.dependency.analyzer.dependency.analyzer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,10 +37,30 @@ public class Analyzer {
         } else {
             throw new RuntimeException(String.format("%s is not a directory.", rootPath));
         }
+
+        returnModel.getLinks().forEach(link -> {
+            final Node node = new Node(link.getTarget(), 1);
+            if (!returnModel.getNodes().contains(node)) {
+                returnModel.getNodes().add(node);
+            }
+        });
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            System.out.println(mapper.writeValueAsString(returnModel));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(returnModel);
+
     }
 
     private void traverseDir(Path path) throws IOException {
-        Files.newDirectoryStream(path).iterator().forEachRemaining(this::processPath);
+        List<Path> subDirectories = new ArrayList<>();
+        try (DirectoryStream<Path> paths = Files.newDirectoryStream(path)) {
+            paths.iterator().forEachRemaining(subDirectories::add);
+            subDirectories.forEach(this::processPath);
+        }
     }
 
     @SneakyThrows
@@ -47,18 +70,16 @@ public class Analyzer {
         } else if (path.getFileName().endsWith("pom.xml")) {
             processPom(path);
         }
+
     }
 
     @SneakyThrows
     private void processPom(Path path) {
         MavenXpp3Reader reader = new MavenXpp3Reader();
         Model model = reader.read(new FileReader(path.toFile()));
-        System.out.println(model.getArtifactId());
         returnModel.getNodes().add(new Node(model.getArtifactId(), 1));
-        model.getDependencies().stream().filter(dependency -> dependency.getGroupId().startsWith("org.spring")).forEach(dependency -> {
-            System.out.println("---->" + dependency.getArtifactId());
+        model.getDependencies().stream().filter(dependency -> dependency.getGroupId().startsWith("org.springframework")).forEach(dependency -> {
             returnModel.getLinks().add(new Link(model.getArtifactId(), dependency.getArtifactId(), 1));
-            System.out.println(returnModel);
         });
     }
 
