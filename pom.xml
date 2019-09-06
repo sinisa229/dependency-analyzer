@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.dependency.analyzer</groupId>
-	<artifactId>poc-jva-dependency-analyzer</artifactId>
+	<artifactId>dependency-analyzer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>poc-jva-dependency-analyzer</name>
+	<name>dependency-analyzer</name>
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
